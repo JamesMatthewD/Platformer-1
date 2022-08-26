@@ -85,15 +85,33 @@ class Player(pygame.sprite.Sprite):
 class Platform(pygame.sprite.Sprite):
 	def __init__(self):
 		super().__init__()
-		self.moving=False
+		self.moving=True
 		self.point=True
+		self.speed=random.random()
+		if self.speed>0.7:
+			self.speed=0
+			while self.speed==0:
+				self.speed=random.randint(-1,1)
+		else:
+			self.speed=0
 
 		self.surf=pygame.Surface((random.randint(150,500),50))
 		self.surf.fill((50, 168, 82))
 		self.rect=self.surf.get_rect(center=(random.randint(0,WIDTH-50), random.randint(0,HEIGHT-50)))
+
+		if self.speed!=0:
+			self.surf.fill((201, 204, 37))
 	
 	def move(self):
-		pass
+		hits=self.rect.colliderect(PLAYER.rect)
+		if self.moving==True:
+			self.rect.move_ip(self.speed,0)
+			if hits:
+				PLAYER.pos+=(self.speed,0)
+			if self.speed>0 and self.rect.left>WIDTH:
+				self.rect.right=0
+			if self.speed<0 and self.rect.right<0:
+				self.rect.left=WIDTH
 
 PLAT1=Platform()
 PLAYER=Player()
