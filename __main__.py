@@ -20,6 +20,7 @@ FPS=60
 framePerSec=pygame.time.Clock()
 
 playerSprite=pygame.image.load(str(os.path.join(os.getcwd(),'sprites\\ned.png'))).convert_alpha()
+playerPowerUpSprite=pygame.image.load(str(os.path.join(os.getcwd(),'sprites\\ned propellor.png'))).convert_alpha()
 
 class Player(pygame.sprite.Sprite):
 	def __init__(self):
@@ -29,6 +30,8 @@ class Player(pygame.sprite.Sprite):
 		self.acc=vec(0,0)
 		self.jumping=False
 		self.score=0
+		self.powerUp=False
+		self.remainingTime=0
 
 		self.image=pygame.transform.scale(playerSprite, (100,60))
 		self.surf=pygame.Surface((100,60))
@@ -38,7 +41,10 @@ class Player(pygame.sprite.Sprite):
 		
 
 	def move(self):
-		self.acc=vec(0,0.34)
+		if self.powerUp==False:
+			self.acc=vec(0,0.32)
+		else:
+			self.acc=vec(0,-2)
 
 		pressedKeys=pygame.key.get_pressed()
 
@@ -70,6 +76,13 @@ class Player(pygame.sprite.Sprite):
 				self.vel.y=-3
 
 	def update(self):
+		if self.remainingTime<0:
+			self.remainingTime-=1
+			if self.remainingTime==0:
+				self.powerUp=False
+				self.image=pygame.transform.scale(playerSprite, (100,60))
+				self.surf.blit(self.image, (0,0))
+
 		hits=pygame.sprite.spritecollide(PLAYER, platforms, False)
 		if PLAYER.vel.y > 0:
 			if hits:
@@ -81,6 +94,11 @@ class Player(pygame.sprite.Sprite):
 					self.vel.y=0
 					self.jumping=False
 
+	def propeller(self):
+		self.image=pygame.transform.scale(playerPowerUpSprite, (100,60))
+		self.surf.blit(PLAYER.image, (0,0))
+		self.powerUp=True
+		self.remainingTime=600
 
 class Platform(pygame.sprite.Sprite):
 	def __init__(self):
@@ -113,6 +131,35 @@ class Platform(pygame.sprite.Sprite):
 			if self.speed<0 and self.rect.right<0:
 				self.rect.left=WIDTH
 
+	def generatePowerUp(self):
+		if self.speed==0:
+			self.speed=random.random()
+			if self.speed<0.08:
+				self.speed=0
+				powerUps.add(Propeller(self.rect.centerx, self.rect.centery-50))
+
+propSprite=pygame.image.load(str(os.path.join(os.getcwd(), 'sprites\\propellor hat.png'))).convert_alpha()
+
+class Propeller(pygame.sprite.Sprite):
+	def __init__(self, posx, posy):
+		super().__init__()
+		PLAYER.surf.set_colorkey((255,255,255))
+		self.image=pygame.transform.scale(propSprite, (50,50))
+		self.surf=pygame.Surface((50,50))
+		self.rect=self.surf.get_rect(center=(posx, posy))
+		self.surf.set_colorkey((0,0,0))
+		self.surf.fill((255,0,0))
+		self.surf.blit(self.image, (0,0))
+
+		self.rect.topleft=(posx-25, posy-25)
+
+		def update(self):
+			if self.rect.colliderect(PLAYER.rect):
+				PLAYER.propeller()
+				self.kill()
+
+				
+
 PLAT1=Platform()
 PLAYER=Player()
 
@@ -122,6 +169,8 @@ allSprites.add(PLAYER)
 
 platforms=pygame.sprite.Group()
 platforms.add(PLAT1)
+
+powerUps=pygame.sprite.Group()
 
 for x in range(random.randint(4,8)):
 	pl=Platform()
@@ -139,6 +188,10 @@ def screenUpdate():
 		screen.blit(entity.surf, entity.rect)
 		entity.move()
 
+	for eachPowerUp in powerUps:
+		screen.blit(eachPowerUp.surf, eachPowerUp.rect)
+		eachPowerUp.update()
+
 
 	screen.blit(updateFPS(), (30,0))
 	pygame.display.update()
@@ -154,7 +207,8 @@ def platGen():
 			p=Platform()
 			p.rect.center=(random.randrange(0,WIDTH-width), random.randrange(-50,0))
 			C=check(p,platforms)
-			
+		
+		p.generatePowerUp()
 		platforms.add(p)
 		allSprites.add(p)
 
