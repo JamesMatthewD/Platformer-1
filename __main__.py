@@ -44,7 +44,12 @@ class Player(pygame.sprite.Sprite):
 		if self.powerUp==False:
 			self.acc=vec(0,0.32)
 		else:
-			self.acc=vec(0,-2)
+			self.acc=vec(0,-0.07)
+			self.remainingTime-=1
+			if self.remainingTime==0:
+				self.powerUp=False
+				self.image=pygame.transform.scale(playerSprite, (100,60))
+				self.surf.blit(self.image, (0,0))
 
 		pressedKeys=pygame.key.get_pressed()
 
@@ -98,7 +103,7 @@ class Player(pygame.sprite.Sprite):
 		self.image=pygame.transform.scale(playerPowerUpSprite, (100,60))
 		self.surf.blit(PLAYER.image, (0,0))
 		self.powerUp=True
-		self.remainingTime=600
+		self.remainingTime=300
 
 class Platform(pygame.sprite.Sprite):
 	def __init__(self):
@@ -143,21 +148,20 @@ propSprite=pygame.image.load(str(os.path.join(os.getcwd(), 'sprites\\propellor h
 class Propeller(pygame.sprite.Sprite):
 	def __init__(self, posx, posy):
 		super().__init__()
-		PLAYER.surf.set_colorkey((255,255,255))
 		self.image=pygame.transform.scale(propSprite, (50,50))
 		self.surf=pygame.Surface((50,50))
 		self.rect=self.surf.get_rect(center=(posx, posy))
-		self.surf.set_colorkey((0,0,0))
+		self.surf.set_colorkey((255,255,255))
 		self.surf.fill((255,0,0))
 		self.surf.blit(self.image, (0,0))
 
 		self.rect.topleft=(posx-25, posy-25)
 
-		def update(self):
-			if self.rect.colliderect(PLAYER.rect):
-				PLAYER.propeller()
-				self.kill()
-
+	def update(self):
+		if self.rect.colliderect(PLAYER.rect):
+			PLAYER.propeller()
+			self.kill()
+	
 				
 
 PLAT1=Platform()
@@ -256,6 +260,11 @@ while running:
 			plat.rect.y+=abs(PLAYER.vel.y)
 			if plat.rect.top>=HEIGHT:
 				plat.kill()
+		
+		for powerUp in powerUps:
+			powerUp.rect.y+=abs(PLAYER.vel.y)
+			if powerUp.rect.top>=HEIGHT:
+				powerUp.kill()
 
 	if PLAYER.rect.top>HEIGHT:
 		for entity in allSprites:
